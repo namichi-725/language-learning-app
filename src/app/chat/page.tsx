@@ -135,19 +135,20 @@ export default function ChatPage() {
 
       setMessages(prev => [...prev, aiMessage]);
       setTopic('');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       console.error('Error:', error);
       
       let errorMessage = 'エラーが発生しました。もう一度お試しください。';
       
       // 503エラー（Service Unavailable）の場合
-      if (error.message?.includes('Gemini APIが一時的に混雑') || 
-          error.message?.includes('Service Unavailable')) {
+      if (err.message?.includes('Gemini APIが一時的に混雑') || 
+          err.message?.includes('Service Unavailable')) {
         errorMessage = 'AI サービスが一時的に混雑しています。30秒ほど待ってから再試行してください。';
       }
       // その他のエラーメッセージがある場合はそれを使用
-      else if (error.message && error.message !== 'APIリクエストに失敗しました') {
-        errorMessage = error.message;
+      else if (err.message && err.message !== 'APIリクエストに失敗しました') {
+        errorMessage = err.message;
       }
       
       const errorMsg: Message = {

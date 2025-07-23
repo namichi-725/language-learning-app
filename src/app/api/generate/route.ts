@@ -52,13 +52,14 @@ export async function POST(request: NextRequest) {
         const parsedResponse = JSON.parse(cleanedResponse);
         
         return NextResponse.json(parsedResponse);
-      } catch (apiError: any) {
+      } catch (apiError: unknown) {
+        const err = apiError as { status?: number; message?: string };
         console.error(`Spanish API attempt failed (${4 - retries}/3):`, apiError);
         
         // 503エラーまたはService Unavailableの場合はリトライ
-        if (apiError.status === 503 || 
-            apiError.message?.includes('Service Unavailable') ||
-            apiError.message?.includes('503')) {
+        if (err.status === 503 || 
+            err.message?.includes('Service Unavailable') ||
+            err.message?.includes('503')) {
           retries--;
           if (retries > 0) {
             console.log(`Retrying Spanish API in 3 seconds... (${retries} attempts left)`);
@@ -71,14 +72,15 @@ export async function POST(request: NextRequest) {
     }
     
     throw new Error('Max retries exceeded for Spanish API');
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { status?: number; message?: string };
     console.error('Error generating content:', error);
     console.error('Response text was:', error instanceof SyntaxError ? 'Invalid JSON format' : 'Unknown error');
     
     // 503 Service Unavailableエラーの特別処理
-    if (error.status === 503 || 
-        error.message?.includes('Service Unavailable') ||
-        error.message?.includes('503')) {
+    if (err.status === 503 || 
+        err.message?.includes('Service Unavailable') ||
+        err.message?.includes('503')) {
       return NextResponse.json(
         { 
           error: 'Gemini APIが一時的に混雑しています。少し時間をおいてから再試行してください。',

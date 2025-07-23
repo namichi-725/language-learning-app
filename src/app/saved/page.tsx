@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, Trash2, Calendar, Target, Globe } from 'lucide-react';
+import { ArrowLeft, BookOpen, Trash2, Calendar, Target } from 'lucide-react';
 import Link from 'next/link';
 import { UserDataManager, SavedArticle as SavedArticleType, InterfaceLanguage } from '@/lib/userDataManager';
 import { getTranslation } from '@/lib/translations';
@@ -36,14 +36,8 @@ export default function SavedPage() {
     }
   }, [currentUser]);
 
-  const t = getTranslation(interfaceLanguage);
-
-  const handleLanguageSwitch = (language: InterfaceLanguage) => {
-    if (currentUser === 'user2') {
-      setInterfaceLanguage(language);
-      UserDataManager.updateInterfaceLanguage(currentUser, language);
-    }
-  };
+  // User 2の場合のみ翻訳を使用
+  const t = currentUser === 'user2' ? getTranslation(interfaceLanguage) : null;
 
   if (!currentUser) {
     return (
