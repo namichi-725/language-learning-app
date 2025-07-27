@@ -1,6 +1,6 @@
 // ユーザー別データ管理用のユーティリティ
 export type UserType = 'user1' | 'user2';
-export type InterfaceLanguage = 'spanish' | 'english';
+export type InterfaceLanguage = 'spanish' | 'english' | 'japanese';
 
 export interface SavedArticle {
   id: string;

@@ -40,18 +40,16 @@ export default function ChatPage() {
       setCurrentUser(user);
       setLevel(user === 'user1' ? 'B1' : 'N3'); // デフォルトレベル
       
-      // User 2の場合は言語設定を読み込む
-      if (user === 'user2') {
-        const settings = UserDataManager.getUserSettings(user);
-        setInterfaceLanguage(settings.interfaceLanguage);
-      }
+      // 両方のユーザーで言語設定を読み込む
+      const settings = UserDataManager.getUserSettings(user);
+      setInterfaceLanguage(settings.interfaceLanguage);
     }
   }, []);
 
   const t = getTranslation(interfaceLanguage);
 
   const handleLanguageSwitch = (language: InterfaceLanguage) => {
-    if (currentUser === 'user2') {
+    if (currentUser) {
       setInterfaceLanguage(language);
       UserDataManager.updateInterfaceLanguage(currentUser, language);
     }
@@ -205,20 +203,19 @@ export default function ChatPage() {
                 </h1>
               </div>
             </div>
-            {/* 言語切り替えボタン（User 2の場合のみ表示） */}
-            {currentUser === 'user2' && (
-              <div className="flex items-center space-x-2">
-                <Globe className="h-4 w-4 text-gray-500" />
-                <select
+            {/* 言語切り替えボタン */}
+            <div className="flex items-center space-x-2">
+              <Globe className="h-4 w-4 text-gray-500" />
+              <select
                   value={interfaceLanguage}
                   onChange={(e) => handleLanguageSwitch(e.target.value as InterfaceLanguage)}
                   className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="spanish">{t.common.spanish}</option>
                   <option value="english">{t.common.english}</option>
+                  <option value="japanese">{t.common.japanese}</option>
                 </select>
               </div>
-            )}
           </div>
         </div>
       </header>

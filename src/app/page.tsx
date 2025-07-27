@@ -16,20 +16,16 @@ export default function Home() {
       const stats = UserDataManager.getUserStats(selectedUser);
       setUserStats(stats);
       
-      // User 2の場合は言語設定を読み込む
-      if (selectedUser === 'user2') {
-        const settings = UserDataManager.getUserSettings(selectedUser);
-        setInterfaceLanguage(settings.interfaceLanguage);
-      } else {
-        setInterfaceLanguage('spanish');
-      }
+      // 両方のユーザーで言語設定を読み込む
+      const settings = UserDataManager.getUserSettings(selectedUser);
+      setInterfaceLanguage(settings.interfaceLanguage);
     }
   }, [selectedUser]);
 
   const t = getTranslation(interfaceLanguage);
 
   const handleLanguageSwitch = (language: InterfaceLanguage) => {
-    if (selectedUser === 'user2') {
+    if (selectedUser) {
       setInterfaceLanguage(language);
       UserDataManager.updateInterfaceLanguage(selectedUser, language);
     }
@@ -70,12 +66,12 @@ export default function Home() {
             <div className="flex items-center space-x-2">
               <BookOpen className="h-8 w-8 text-indigo-600" />
               <h1 className="text-2xl font-bold text-gray-900">
-                {selectedUser === 'user1' ? 'Language Learning App' : t.home.title}
+                {t.home.title}
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              {/* 言語切り替えボタン（User 2の場合のみ表示） */}
-              {selectedUser === 'user2' && (
+              {/* 言語切り替えボタン（ユーザー選択後に表示） */}
+              {selectedUser && (
                 <div className="flex items-center space-x-2">
                   <Globe className="h-4 w-4 text-gray-500" />
                   <select
@@ -85,6 +81,7 @@ export default function Home() {
                   >
                     <option value="spanish">{t.common.spanish}</option>
                     <option value="english">{t.common.english}</option>
+                    <option value="japanese">{t.common.japanese}</option>
                   </select>
                 </div>
               )}
