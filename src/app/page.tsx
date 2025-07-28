@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, MessageSquare, Archive, BarChart3, Globe } from 'lucide-react';
+import { BookOpen, Users, MessageSquare, Archive, BarChart3, Globe, Database } from 'lucide-react';
 import { UserDataManager, UserStats, InterfaceLanguage } from '@/lib/userDataManager';
 import { getTranslation } from '@/lib/translations';
 
@@ -10,24 +10,96 @@ export default function Home() {
   const [selectedUser, setSelectedUser] = useState<'user1' | 'user2' | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>('spanish');
+  const [migrationStatus, setMigrationStatus] = useState<string>('');
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [showMigration, setShowMigration] = useState(false);
 
   useEffect(() => {
-    if (selectedUser) {
-      const stats = UserDataManager.getUserStats(selectedUser);
-      setUserStats(stats);
-      
-      // 両方のユーザーで言語設定を読み込む
-      const settings = UserDataManager.getUserSettings(selectedUser);
-      setInterfaceLanguage(settings.interfaceLanguage);
-    }
+    const loadUserData = async () => {
+      if (selectedUser) {
+        try {
+          const stats = await UserDataManager.getUserStats(selectedUser);
+          setUserStats(stats);
+          
+          // 両方のユーザーで言語設定を読み込む
+          const settings = await UserDataManager.getUserSettings(selectedUser);
+          setInterfaceLanguage(settings.interfaceLanguage);
+        } catch (error) {
+          console.error('Error loading user data:', error);
+        }
+      }
+    };
+
+    loadUserData();
   }, [selectedUser]);
+
+  // ローカルデータの存在チェック
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasLocalData = localStorage.getItem('savedArticles_user1') || localStorage.getItem('savedArticles_user2');
+      setShowMigration(!!hasLocalData);
+    }
+  }, []);
 
   const t = getTranslation(interfaceLanguage);
 
-  const handleLanguageSwitch = (language: InterfaceLanguage) => {
+  const handleLanguageSwitch = async (language: InterfaceLanguage) => {
     if (selectedUser) {
       setInterfaceLanguage(language);
-      UserDataManager.updateInterfaceLanguage(selectedUser, language);
+      try {
+        await UserDataManager.updateInterfaceLanguage(selectedUser, language);
+      } catch (error) {
+        console.error('Error updating language:', error);
+      }
+    }
+  };
+
+  const handleMigration = async () => {
+    if (typeof window === 'undefined') return;
+    
+    setIsMigrating(true);
+    setMigrationStatus('移行を開始しています...');
+
+    try {
+      // ローカルストレージのデータをチェック
+      const user1Data = localStorage.getItem('savedArticles_user1');
+      const user2Data = localStorage.getItem('savedArticles_user2');
+
+      if (!user1Data && !user2Data) {
+        setMigrationStatus('移行するデータが見つかりません。');
+        setIsMigrating(false);
+        return;
+      }
+
+      let migratedCount = 0;
+
+      if (user1Data) {
+        setMigrationStatus('NAMICHI のデータを移行中...');
+        await UserDataManager.migrateFromLocalStorage('user1');
+        const articles = JSON.parse(user1Data);
+        migratedCount += articles.length;
+      }
+
+      if (user2Data) {
+        setMigrationStatus('JOSÉ のデータを移行中...');
+        await UserDataManager.migrateFromLocalStorage('user2');
+        const articles = JSON.parse(user2Data);
+        migratedCount += articles.length;
+      }
+
+      setMigrationStatus(`移行完了！${migratedCount}件の記事を移行しました。`);
+      setShowMigration(false);
+      
+      // 選択されたユーザーのデータを再読み込み
+      if (selectedUser) {
+        const stats = await UserDataManager.getUserStats(selectedUser);
+        setUserStats(stats);
+      }
+    } catch (error) {
+      console.error('Migration error:', error);
+      setMigrationStatus(`移行中にエラーが発生しました: ${error}`);
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -95,6 +167,42 @@ export default function Home() {
 
       {/* メインコンテンツ */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 移行コンポーネント */}
+        {showMigration && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div className="flex items-start space-x-3">
+              <Database className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                  データベース移行
+                </h3>
+                <p className="text-blue-700 mb-4">
+                  ローカルに保存されたデータをデータベースに移行します。
+                  移行後は、ページを更新しても、他のデバイスからでもデータにアクセスできます。
+                </p>
+                
+                {migrationStatus && (
+                  <div className="mb-4 p-3 bg-white rounded border">
+                    <p className="text-sm text-gray-700">{migrationStatus}</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleMigration}
+                  disabled={isMigrating}
+                  className={`px-4 py-2 rounded font-medium ${
+                    isMigrating
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {isMigrating ? '移行中...' : 'データを移行する'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {!selectedUser ? (
           /* ユーザー選択画面 */
           <div className="text-center">

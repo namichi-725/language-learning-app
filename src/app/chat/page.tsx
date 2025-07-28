@@ -33,25 +33,37 @@ export default function ChatPage() {
   const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>('spanish');
 
   useEffect(() => {
-    // URLパラメータからユーザーを取得
-    const params = new URLSearchParams(window.location.search);
-    const user = params.get('user') as UserType;
-    if (user === 'user1' || user === 'user2') {
-      setCurrentUser(user);
-      setLevel(user === 'user1' ? 'B1' : 'N3'); // デフォルトレベル
-      
-      // 両方のユーザーで言語設定を読み込む
-      const settings = UserDataManager.getUserSettings(user);
-      setInterfaceLanguage(settings.interfaceLanguage);
-    }
+    const loadUserSettings = async () => {
+      // URLパラメータからユーザーを取得
+      const params = new URLSearchParams(window.location.search);
+      const user = params.get('user') as UserType;
+      if (user === 'user1' || user === 'user2') {
+        setCurrentUser(user);
+        setLevel(user === 'user1' ? 'B1' : 'N3'); // デフォルトレベル
+        
+        try {
+          // 両方のユーザーで言語設定を読み込む
+          const settings = await UserDataManager.getUserSettings(user);
+          setInterfaceLanguage(settings.interfaceLanguage);
+        } catch (error) {
+          console.error('Error loading user settings:', error);
+        }
+      }
+    };
+
+    loadUserSettings();
   }, []);
 
   const t = getTranslation(interfaceLanguage);
 
-  const handleLanguageSwitch = (language: InterfaceLanguage) => {
+  const handleLanguageSwitch = async (language: InterfaceLanguage) => {
     if (currentUser) {
       setInterfaceLanguage(language);
-      UserDataManager.updateInterfaceLanguage(currentUser, language);
+      try {
+        await UserDataManager.updateInterfaceLanguage(currentUser, language);
+      } catch (error) {
+        console.error('Error updating language:', error);
+      }
     }
   };
 
@@ -166,18 +178,23 @@ export default function ChatPage() {
     // TODO: トースト通知を追加
   };
 
-  const saveContent = () => {
+  const saveContent = async () => {
     if (!generatedContent || !currentUser) return;
     
-    const savedData = {
-      topic,
-      level,
-      content: generatedContent,
-      timestamp: new Date().toISOString(),
-    };
-    
-    UserDataManager.saveArticle(currentUser, savedData);
-    alert('文章が保存されました！');
+    try {
+      const savedData = {
+        topic,
+        level,
+        content: generatedContent,
+        timestamp: new Date().toISOString(),
+      };
+      
+      await UserDataManager.saveArticle(currentUser, savedData);
+      alert(t.chat.contentSaved);
+    } catch (error) {
+      console.error('Error saving content:', error);
+      alert('保存中にエラーが発生しました。');
+    }
   };
 
   return (

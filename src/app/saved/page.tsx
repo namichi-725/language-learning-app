@@ -15,29 +15,43 @@ export default function SavedPage() {
   const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>('spanish');
 
   useEffect(() => {
-    // URLパラメータからユーザーを取得
-    const params = new URLSearchParams(window.location.search);
-    const user = params.get('user') as UserType;
-    if (user === 'user1' || user === 'user2') {
-      setCurrentUser(user);
-      
-      // User 2の場合は言語設定を読み込む
-      if (user === 'user2') {
-        const settings = UserDataManager.getUserSettings(user);
-        setInterfaceLanguage(settings.interfaceLanguage);
+    const loadUserData = async () => {
+      // URLパラメータからユーザーを取得
+      const params = new URLSearchParams(window.location.search);
+      const user = params.get('user') as UserType;
+      if (user === 'user1' || user === 'user2') {
+        setCurrentUser(user);
+        
+        try {
+          // 両方のユーザーで言語設定を読み込む
+          const settings = await UserDataManager.getUserSettings(user);
+          setInterfaceLanguage(settings.interfaceLanguage);
+        } catch (error) {
+          console.error('Error loading user settings:', error);
+        }
       }
-    }
+    };
+
+    loadUserData();
   }, []);
 
   useEffect(() => {
-    if (currentUser) {
-      const articles = UserDataManager.getArticles(currentUser);
-      setSavedArticles(articles);
-    }
+    const loadArticles = async () => {
+      if (currentUser) {
+        try {
+          const articles = await UserDataManager.getArticles(currentUser);
+          setSavedArticles(articles);
+        } catch (error) {
+          console.error('Error loading articles:', error);
+        }
+      }
+    };
+
+    loadArticles();
   }, [currentUser]);
 
-  // User 2の場合のみ翻訳を使用
-  const t = currentUser === 'user2' ? getTranslation(interfaceLanguage) : null;
+  // 常に翻訳システムを使用
+  const t = getTranslation(interfaceLanguage);
 
   if (!currentUser) {
     return (
@@ -52,13 +66,19 @@ export default function SavedPage() {
     );
   }
 
-  const deleteArticle = (articleId: string) => {
+  const deleteArticle = async (articleId: string) => {
     if (!currentUser) return;
-    UserDataManager.deleteArticle(currentUser, articleId);
-    const updatedArticles = UserDataManager.getArticles(currentUser);
-    setSavedArticles(updatedArticles);
-    if (selectedArticle?.id === articleId) {
-      setSelectedArticle(null);
+    
+    try {
+      await UserDataManager.deleteArticle(currentUser, articleId);
+      const updatedArticles = await UserDataManager.getArticles(currentUser);
+      setSavedArticles(updatedArticles);
+      if (selectedArticle?.id === articleId) {
+        setSelectedArticle(null);
+      }
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      alert('記事の削除中にエラーが発生しました。');
     }
   };
 
